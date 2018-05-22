@@ -2,6 +2,7 @@ using PetaPoco;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.Common;
 using System.Data.SqlClient;
 using System.Linq;
 using System.Text;
@@ -29,68 +30,29 @@ namespace Mayb.DAL
             }
 #endif
         }
-        public DataSet QueryDataSet(string sql, params object[] args)
-        {
-            try
-            {
-                OpenSharedConnection();
-                using (var cmd = CreateCommand(Connection, sql, args))
-                {
-                    SqlDataAdapter sda = new SqlDataAdapter((SqlCommand)cmd);
-                    DataSet ds = new DataSet();
-                    sda.Fill(ds);
-                    return ds;
-                }
-            }
-            catch (Exception ex)
-            {
-                OnException(ex);
-                throw;
-            }
-            finally
-            {
-                CloseSharedConnection();
-            }
-        }
         public override bool OnException(Exception x)
         {
             NLog.LogManager.GetCurrentClassLogger().Error(x);
             return base.OnException(x);
         }
-        public DataTable QueryDataTable(string sql, params object[] args)
-        {
-            try
-            {
-                OpenSharedConnection();
-                using (var cmd = CreateCommand(Connection, sql, args))
-                {
-                    DataTable dt = new DataTable();
-                    dt.Load(cmd.ExecuteReader());
-                    return dt;
-                }
-            }
-            catch (Exception ex)
-            {
-                OnException(ex);
-                throw;
-            }
-            finally
-            {
-                CloseSharedConnection();
-            }
-        }
+
         public bool WriteToServer(Dictionary<string,DataTable> dic)
         {
             try
             {
                 OpenSharedConnection();
                 foreach (var item in dic)
-                    WriteToServer(new SqlBulkCopy((SqlConnection)Connection), item.Key, item.Value);
+                {
+                    using (var bulk = new SqlBulkCopy((SqlConnection)Connection))
+                    {
+                        WriteToServer(bulk, item.Key, item.Value);
+                    }
+                }
             }
             catch (Exception ex)
             {
                 OnException(ex);
-                return false;
+                throw;
             }
             finally
             {
@@ -104,14 +66,19 @@ namespace Mayb.DAL
             {
                 BeginTransaction();
                 foreach (var item in dic)
-                    WriteToServer(new SqlBulkCopy((SqlConnection)Connection, option, (SqlTransaction)Transaction), item.Key, item.Value);
+                {
+                    using (var bulk = new SqlBulkCopy((SqlConnection)Connection, option, (SqlTransaction)Transaction))
+                    {   
+                        WriteToServer(bulk, item.Key, item.Value);
+                    }
+                }
                 CompleteTransaction();
             }
             catch (Exception ex)
             {
-                OnException(ex);
                 AbortTransaction();
-                return false;
+                OnException(ex);
+                throw;
             }
             return true;
         }
@@ -120,12 +87,15 @@ namespace Mayb.DAL
             try
             {
                 OpenSharedConnection();
-                WriteToServer(new SqlBulkCopy((SqlConnection)Connection), tableName, dt);
+                using (var bulk = new SqlBulkCopy((SqlConnection)Connection))
+                {
+                    WriteToServer(bulk, tableName, dt);
+                }
             }
             catch (Exception ex)
             {
                 OnException(ex);
-                return false;
+                throw;
             }
             finally
             {
@@ -138,14 +108,17 @@ namespace Mayb.DAL
             try
             {
                 BeginTransaction();
-                WriteToServer(new SqlBulkCopy((SqlConnection)Connection, option, (SqlTransaction)Transaction), tableName, dt);
+                using (var bulk=new SqlBulkCopy((SqlConnection)Connection, option, (SqlTransaction)Transaction))
+                {
+                    WriteToServer(bulk, tableName, dt);
+                }
                 CompleteTransaction();
             }
             catch (Exception ex)
             {
                 OnException(ex);
                 AbortTransaction();
-                return false;
+                throw;
             }
             return true;
         }
