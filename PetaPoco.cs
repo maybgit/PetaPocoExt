@@ -184,7 +184,7 @@ namespace PetaPoco
             if (configuration == null)
                 throw new ArgumentNullException("configuration");
 
-            var settings = (IBuildConfigurationSettings)configuration;
+            var settings = (IBuildConfigurationSettings) configuration;
 
             IMapper defaultMapper = null;
             settings.TryGetSetting<IMapper>(DatabaseConfigurationExtensions.DefaultMapper, v => defaultMapper = v);
@@ -597,7 +597,7 @@ namespace PetaPoco
         /// </remarks>
         public virtual void OnExecutingCommand(IDbCommand cmd)
         {
-
+            
         }
 
         /// <summary>
@@ -610,7 +610,7 @@ namespace PetaPoco
 
         #endregion
 
-        #region operation: Execute
+        #region operation: Execute 
 
         /// <summary>
         ///     Executes a non-query command
@@ -683,7 +683,7 @@ namespace PetaPoco
                         if (u != null && (val == null || val == DBNull.Value))
                             return default(T);
 
-                        return (T)Convert.ChangeType(val, u == null ? typeof(T) : u);
+                        return (T) Convert.ChangeType(val, u == null ? typeof(T) : u);
                     }
                 }
                 finally
@@ -795,9 +795,9 @@ namespace PetaPoco
                 ItemsPerPage = itemsPerPage,
                 TotalItems = ExecuteScalar<long>(sqlCount, countArgs)
             };
-            result.TotalPages = result.TotalItems / itemsPerPage;
+            result.TotalPages = result.TotalItems/itemsPerPage;
 
-            if ((result.TotalItems % itemsPerPage) != 0)
+            if ((result.TotalItems%itemsPerPage) != 0)
                 result.TotalPages++;
 
             OneTimeCommandTimeout = saveTimeout;
@@ -826,7 +826,7 @@ namespace PetaPoco
         public Page<T> Page<T>(long page, long itemsPerPage, string sql, params object[] args)
         {
             string sqlCount, sqlPage;
-            BuildPageQueries<T>((page - 1) * itemsPerPage, itemsPerPage, sql, ref args, out sqlCount, out sqlPage);
+            BuildPageQueries<T>((page - 1)*itemsPerPage, itemsPerPage, sql, ref args, out sqlCount, out sqlPage);
             return Page<T>(page, itemsPerPage, sqlCount, args, sqlPage, args);
         }
 
@@ -886,7 +886,7 @@ namespace PetaPoco
         /// </remarks>
         public List<T> Fetch<T>(long page, long itemsPerPage, string sql, params object[] args)
         {
-            return SkipTake<T>((page - 1) * itemsPerPage, itemsPerPage, sql, args);
+            return SkipTake<T>((page - 1)*itemsPerPage, itemsPerPage, sql, args);
         }
 
         /// <summary>
@@ -903,7 +903,7 @@ namespace PetaPoco
         /// </remarks>
         public List<T> Fetch<T>(long page, long itemsPerPage, Sql sql)
         {
-            return SkipTake<T>((page - 1) * itemsPerPage, itemsPerPage, sql.SQL, sql.Arguments);
+            return SkipTake<T>((page - 1)*itemsPerPage, itemsPerPage, sql.SQL, sql.Arguments);
         }
 
         #endregion
@@ -1030,6 +1030,64 @@ namespace PetaPoco
         public IEnumerable<T> Query<T>(Sql sql)
         {
             return Query<T>(sql.SQL, sql.Arguments);
+        }
+
+        /// <summary>
+        /// Query return table
+        /// </summary>
+        /// <param name="sql">The complete SQL statement, EnableAutoSelect will be used as false.</param>
+        /// <param name="args">Arguments to any embedded parameters in the SQL statement</param>
+        /// <returns></returns>
+        public DataTable Query(string sql, params object[] args)
+        {
+            OpenSharedConnection();
+            try
+            {
+                DataTable table = new DataTable();
+                using (var cmd = CreateCommand(_sharedConnection, sql, args))
+                {
+                    table.Load(cmd.ExecuteReader());
+                    OnExecutedCommand(cmd);
+                }
+                return table;
+            }
+            catch (Exception x)
+            {
+                OnException(x);
+                throw;
+            }
+            finally
+            {
+                CloseSharedConnection();
+            }
+        }
+
+        public void Query(ref DataSet ds, string sql, params object[] args)
+        {
+            OpenSharedConnection();
+            try
+            {
+                if (ds == null) ds = new DataSet();
+
+                using (var cmd = CreateCommand(_sharedConnection, sql, args))
+                {
+                    using (DbDataAdapter dda = _factory.CreateDataAdapter())
+                    {
+                        dda.SelectCommand = (DbCommand) cmd;
+                        dda.Fill(ds);
+                        OnExecutedCommand(cmd);
+                    }
+                }
+            }
+            catch (Exception x)
+            {
+                if (OnException(x))
+                    throw;
+            }
+            finally
+            {
+                CloseSharedConnection();
+            }
         }
 
         #endregion
@@ -1803,23 +1861,23 @@ namespace PetaPoco
                 return pk == null;
 
             if (type == typeof(string))
-                return string.IsNullOrEmpty((string)pk);
+                return string.IsNullOrEmpty((string) pk);
             if (!pi.PropertyType.IsValueType)
                 return pk == null;
             if (type == typeof(long))
-                return (long)pk == default(long);
+                return (long) pk == default(long);
             if (type == typeof(int))
-                return (int)pk == default(int);
+                return (int) pk == default(int);
             if (type == typeof(Guid))
-                return (Guid)pk == default(Guid);
+                return (Guid) pk == default(Guid);
             if (type == typeof(ulong))
-                return (ulong)pk == default(ulong);
+                return (ulong) pk == default(ulong);
             if (type == typeof(uint))
-                return (uint)pk == default(uint);
+                return (uint) pk == default(uint);
             if (type == typeof(short))
-                return (short)pk == default(short);
+                return (short) pk == default(short);
             if (type == typeof(ushort))
-                return (ushort)pk == default(ushort);
+                return (ushort) pk == default(ushort);
 
             // Create a default instance and compare
             return pk == Activator.CreateInstance(pk.GetType());
@@ -2413,7 +2471,7 @@ namespace PetaPoco
                         }
                         if (bNeedTerminator)
                         {
-                            var poco = (TRet)(cb as Delegate).DynamicInvoke(new object[types.Length]);
+                            var poco = (TRet) (cb as Delegate).DynamicInvoke(new object[types.Length]);
                             if (poco != null)
                                 yield return poco;
                             else
@@ -2620,7 +2678,10 @@ namespace PetaPoco
         private string _connectionString
         {
             get { return __connectionString; }
-            set { __connectionString = value; }
+            set
+            {   
+                  __connectionString = value;
+            }
         }
 
         private IProvider _provider;
@@ -2633,7 +2694,8 @@ namespace PetaPoco
         private string _lastSql;
         private object[] _lastArgs;
         private string _paramPrefix;
-        private DbProviderFactory _factory;
+        //private DbProviderFactory _factory;
+        protected DbProviderFactory _factory;
         private IsolationLevel? _isolationLevel;
 
         #endregion
@@ -2693,7 +2755,7 @@ namespace PetaPoco
             // Note: no argument checking because, pref, enduser unlikely and handled by RT/FW
             object setting;
             if (_settings.TryGetValue(key, out setting))
-                setSetting((T)setting);
+                setSetting((T) setting);
             else if (onFail != null)
                 onFail();
         }
@@ -2732,7 +2794,7 @@ namespace PetaPoco
 
         private static void SetSetting(this IDatabaseBuildConfiguration source, string key, object value)
         {
-            ((IBuildConfigurationSettings)source).SetSetting(key, value);
+            ((IBuildConfigurationSettings) source).SetSetting(key, value);
         }
 
         /// <summary>
@@ -4195,39 +4257,39 @@ namespace PetaPoco
 
 
     /* 
-    Thanks to Adam Schroder (@schotime) for this.
+	Thanks to Adam Schroder (@schotime) for this.
 	
-    This extra file provides an implementation of DbProviderFactory for early versions of the Oracle
-    drivers that don't include include it.  For later versions of Oracle, the standard OracleProviderFactory
-    class should work fine
+	This extra file provides an implementation of DbProviderFactory for early versions of the Oracle
+	drivers that don't include include it.  For later versions of Oracle, the standard OracleProviderFactory
+	class should work fine
 	
-    Uses reflection to load Oracle.DataAccess assembly and in-turn create connections and commands
+	Uses reflection to load Oracle.DataAccess assembly and in-turn create connections and commands
 	
-    Currently untested.
+	Currently untested.
 	
-    Usage:   
+	Usage:   
 		
-            new PetaPoco.Database("<connstring>", new PetaPoco.OracleProvider())
+			new PetaPoco.Database("<connstring>", new PetaPoco.OracleProvider())
 	
-    Or in your app/web config (be sure to change ASSEMBLYNAME to the name of your 
-    assembly containing OracleProvider.cs)
+	Or in your app/web config (be sure to change ASSEMBLYNAME to the name of your 
+	assembly containing OracleProvider.cs)
 	
-        <connectionStrings>
-            <add
-                name="oracle"
-                connectionString="WHATEVER"
-                providerName="Oracle"
-                />
-        </connectionStrings>
+		<connectionStrings>
+			<add
+				name="oracle"
+				connectionString="WHATEVER"
+				providerName="Oracle"
+				/>
+		</connectionStrings>
 
-        <system.data>
-            <DbProviderFactories>
-                <add name="PetaPoco Oracle Provider" invariant="Oracle" description="PetaPoco Oracle Provider" 
-                                type="PetaPoco.OracleProvider, ASSEMBLYNAME" />
-            </DbProviderFactories>
-        </system.data>
+		<system.data>
+			<DbProviderFactories>
+				<add name="PetaPoco Oracle Provider" invariant="Oracle" description="PetaPoco Oracle Provider" 
+								type="PetaPoco.OracleProvider, ASSEMBLYNAME" />
+			</DbProviderFactories>
+		</system.data>
 
-     */
+	 */
 
     public class OracleProvider : DbProviderFactory
     {
@@ -4250,12 +4312,12 @@ namespace PetaPoco
 
         public override DbConnection CreateConnection()
         {
-            return (DbConnection)Activator.CreateInstance(_connectionType);
+            return (DbConnection) Activator.CreateInstance(_connectionType);
         }
 
         public override DbCommand CreateCommand()
         {
-            DbCommand command = (DbCommand)Activator.CreateInstance(_commandType);
+            DbCommand command = (DbCommand) Activator.CreateInstance(_commandType);
 
             var oracleCommandBindByName = _commandType.GetProperty("BindByName");
             oracleCommandBindByName.SetValue(command, true, null);
@@ -4584,7 +4646,7 @@ namespace PetaPoco
             // Read attribute
             if (colAttrs.Length > 0)
             {
-                var colattr = (ColumnAttribute)colAttrs[0];
+                var colattr = (ColumnAttribute) colAttrs[0];
                 ci.InsertTemplate = colattr.InsertTemplate;
                 ci.UpdateTemplate = colattr.UpdateTemplate;
                 ci.ColumnName = colattr.Name == null ? propertyInfo.Name : colattr.Name;
@@ -5908,7 +5970,7 @@ namespace PetaPoco
             il.Emit(OpCodes.Ret);
 
             // Finish up
-            return (Func<IDataReader, object, TRet>)m.CreateDelegate(typeof(Func<IDataReader, object, TRet>), new MultiPocoFactory() { _delegates = dels });
+            return (Func<IDataReader, object, TRet>) m.CreateDelegate(typeof(Func<IDataReader, object, TRet>), new MultiPocoFactory() { _delegates = dels });
         }
 
         internal static void FlushCaches()
@@ -5923,7 +5985,7 @@ namespace PetaPoco
             var key = Tuple.Create(typeof(TRet), new ArrayKey<Type>(types), connectionString, sql);
 
             return
-                (Func<IDataReader, object, TRet>)MultiPocoFactories.Get(key, () => CreateMultiPocoFactory<TRet>(types, connectionString, sql, r, defaultMapper));
+                (Func<IDataReader, object, TRet>) MultiPocoFactories.Get(key, () => CreateMultiPocoFactory<TRet>(types, connectionString, sql, r, defaultMapper));
         }
     }
 
@@ -6001,7 +6063,7 @@ namespace PetaPoco
         private static Cache<Type, PocoData> _pocoDatas = new Cache<Type, PocoData>();
         private static List<Func<object, object>> _converters = new List<Func<object, object>>();
         private static object _converterLock = new object();
-        private static MethodInfo fnGetValue = typeof(IDataRecord).GetMethod("GetValue", new Type[] { typeof(int) });
+        private static MethodInfo fnGetValue = typeof(IDataRecord).GetMethod("GetValue", new Type[] {typeof(int)});
         private static MethodInfo fnIsDBNull = typeof(IDataRecord).GetMethod("IsDBNull");
         private static FieldInfo fldConverters = typeof(PocoData).GetField("_converters", BindingFlags.Static | BindingFlags.GetField | BindingFlags.NonPublic);
         private static MethodInfo fnListGetItem = typeof(List<Func<object, object>>).GetProperty("Item").GetGetMethod();
@@ -6065,13 +6127,13 @@ namespace PetaPoco
                 var pd = new PocoData();
                 pd.TableInfo = new TableInfo();
                 pd.Columns = new Dictionary<string, PocoColumn>(StringComparer.OrdinalIgnoreCase);
-                pd.Columns.Add(primaryKeyName, new ExpandoColumn() { ColumnName = primaryKeyName });
+                pd.Columns.Add(primaryKeyName, new ExpandoColumn() {ColumnName = primaryKeyName});
                 pd.TableInfo.PrimaryKey = primaryKeyName;
                 pd.TableInfo.AutoIncrement = true;
                 foreach (var col in (obj as IDictionary<string, object>).Keys)
                 {
                     if (col != primaryKeyName)
-                        pd.Columns.Add(col, new ExpandoColumn() { ColumnName = col });
+                        pd.Columns.Add(col, new ExpandoColumn() {ColumnName = col});
                 }
                 return pd;
             }
@@ -6101,7 +6163,7 @@ namespace PetaPoco
             return PocoFactories.Get(key, () =>
             {
                 // Create the method
-                var m = new DynamicMethod("petapoco_factory_" + PocoFactories.Count.ToString(), Type, new Type[] { typeof(IDataReader) }, true);
+                var m = new DynamicMethod("petapoco_factory_" + PocoFactories.Count.ToString(), Type, new Type[] {typeof(IDataReader)}, true);
                 var il = m.GetILGenerator();
                 var mapper = Mappers.GetMapper(Type, defaultMapper);
 
@@ -6121,12 +6183,12 @@ namespace PetaPoco
                         il.Emit(OpCodes.Ldstr, reader.GetName(i)); // obj, obj, fieldname
 
                         // Get the converter
-                        Func<object, object> converter = mapper.GetFromDbConverter((PropertyInfo)null, srcType);
+                        Func<object, object> converter = mapper.GetFromDbConverter((PropertyInfo) null, srcType);
 
                         /*
-                        if (ForceDateTimesToUtc && converter == null && srcType == typeof(DateTime))
-                            converter = delegate(object src) { return new DateTime(((DateTime)src).Ticks, DateTimeKind.Utc); };
-                         */
+						if (ForceDateTimesToUtc && converter == null && srcType == typeof(DateTime))
+							converter = delegate(object src) { return new DateTime(((DateTime)src).Ticks, DateTimeKind.Utc); };
+						 */
 
                         // Setup stack for call to converter
                         AddConverterToStack(il, converter);
@@ -6230,7 +6292,7 @@ namespace PetaPoco
                         bool Handled = false;
                         if (converter == null)
                         {
-                            var valuegetter = typeof(IDataRecord).GetMethod("Get" + srcType.Name, new Type[] { typeof(int) });
+                            var valuegetter = typeof(IDataRecord).GetMethod("Get" + srcType.Name, new Type[] {typeof(int)});
                             if (valuegetter != null
                                 && valuegetter.ReturnType == srcType
                                 && (valuegetter.ReturnType == dstType || valuegetter.ReturnType == Nullable.GetUnderlyingType(dstType)))
@@ -6242,7 +6304,7 @@ namespace PetaPoco
                                 // Convert to Nullable
                                 if (Nullable.GetUnderlyingType(dstType) != null)
                                 {
-                                    il.Emit(OpCodes.Newobj, dstType.GetConstructor(new Type[] { Nullable.GetUnderlyingType(dstType) }));
+                                    il.Emit(OpCodes.Newobj, dstType.GetConstructor(new Type[] {Nullable.GetUnderlyingType(dstType)}));
                                 }
 
                                 il.Emit(OpCodes.Callvirt, pc.PropertyInfo.GetSetMethod(true)); // poco
@@ -6325,7 +6387,7 @@ namespace PetaPoco
             // Standard DateTime->Utc mapper
             if (pc != null && pc.ForceToUtc && srcType == typeof(DateTime) && (dstType == typeof(DateTime) || dstType == typeof(DateTime?)))
             {
-                return delegate(object src) { return new DateTime(((DateTime)src).Ticks, DateTimeKind.Utc); };
+                return delegate(object src) { return new DateTime(((DateTime) src).Ticks, DateTimeKind.Utc); };
             }
 
             // unwrap nullable types
@@ -6342,22 +6404,22 @@ namespace PetaPoco
                 if (underlyingDstType != null)
                 {
                     // if dstType is Nullable<Enum>, convert to enum value
-                    return delegate(object src) { return Enum.ToObject(dstType, src); };
+                    return delegate (object src) { return Enum.ToObject(dstType, src); };
                 }
                 else if (srcType != backingDstType)
                 {
-                    return delegate(object src) { return Convert.ChangeType(src, backingDstType, null); };
+                    return delegate (object src) { return Convert.ChangeType(src, backingDstType, null); };
                 }
             }
             else if (!dstType.IsAssignableFrom(srcType))
             {
                 if (dstType.IsEnum && srcType == typeof(string))
                 {
-                    return delegate(object src) { return EnumMapper.EnumFromString(dstType, (string)src); };
+                    return delegate(object src) { return EnumMapper.EnumFromString(dstType, (string) src); };
                 }
                 else if (dstType == typeof(Guid) && srcType == typeof(string))
                 {
-                    return delegate(object src) { return Guid.Parse((string)src); };
+                    return delegate(object src) { return Guid.Parse((string) src); };
                 }
                 else
                 {
@@ -7133,14 +7195,14 @@ namespace PetaPoco
 
         private static string Ordanise(int number, string numberString)
         {
-            var nMod100 = number % 100;
+            var nMod100 = number%100;
 
             if (nMod100 >= 11 && nMod100 <= 13)
             {
                 return numberString + "th";
             }
 
-            switch (number % 10)
+            switch (number%10)
             {
                 case 1:
                     return numberString + "st";
@@ -7608,7 +7670,7 @@ namespace PetaPoco
         public override object MapParameterValue(object value)
         {
             if (value.GetType() == typeof(uint))
-                return (long)((uint)value);
+                return (long) ((uint) value);
 
             return base.MapParameterValue(value);
         }
@@ -7646,7 +7708,7 @@ namespace PetaPoco
             if (string.IsNullOrEmpty(parts.SqlOrderBy))
                 parts.Sql += " ORDER BY ABS(1)";
             var sqlPage = string.Format("{0}\nOFFSET @{1} ROWS FETCH NEXT @{2} ROWS ONLY", parts.Sql, args.Length, args.Length + 1);
-            args = args.Concat(new object[] { skip, take }).ToArray();
+            args = args.Concat(new object[] {skip, take}).ToArray();
             return sqlPage;
         }
 
@@ -7719,7 +7781,7 @@ namespace PetaPoco
             _hashCode = 17;
             foreach (var k in keys)
             {
-                _hashCode = _hashCode * 23 + (k == null ? 0 : k.GetHashCode());
+                _hashCode = _hashCode*23 + (k == null ? 0 : k.GetHashCode());
             }
         }
 
